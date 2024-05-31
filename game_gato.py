@@ -1,3 +1,4 @@
+import itertools
 import os
 
 class Game():
@@ -12,16 +13,12 @@ class Game():
 
     @staticmethod
     def init_table():
-        return {
-            "1": {"1": " ", "2": " ", "3": " "},
-            "2": {"1": " ", "2": " ", "3": " "},
-            "3": {"1": " ", "2": " ", "3": " "}
-        }
+        return {row: {column: " " for column in range(1,4)} for row in range(1,4)}
 
     def add_move(self,row:int,column:int,player:int):
-        if self.table[str(row)][str(column)]==" ":
+        if self.table[row][column]==" ":
             printable=self.player_1 if player==1 else self.player_2
-            self.table[str(row)][str(column)]=printable
+            self.table[row][column]=printable
             return True
         else: return False
 
@@ -48,19 +45,108 @@ class Game():
                 print(line_divition)
                 line_moves_count=0
 
+    def start_turn(self,player:int):
+        turn_ended=False
+        player_name=self.player_1_name if player==1 else self.player_2_name
+        player_printable=self.player_1 if player==1 else self.player_2
+        print(f"Turno de {player_name} con {player_printable}")
+        self.print_table()
+        while not turn_ended:
+            print("Elige tu movimiento")
+            if self.add_move(self.move_item_validation("fila"),
+                            self.move_item_validation("columna"),
+                            player):
+                self.print_table()
+                turn_ended=True
+            else: print("Esta posición ya existe, elige otra")
+           
+    @staticmethod
+    def move_item_validation(name_move_item:str):
+        move_item_valid=False
+        while not move_item_valid:
+            move_item=int(input(f"Ingresa la {name_move_item}: "))
+            if move_item<=0 or move_item>3:
+                print(f"La {name_move_item} no está permitida, solo números entre 1 y 3")
+            else: move_item_valid=True
+        return move_item
+        
 
 
-def wellcome():
-    print("Bienvenido al juego del gato")
 
-def start_game():
-    return Game(input("Ingresa el nombre del jugador 1: "),input("Ingresa el nombre del jugador 1: "))
+            
+
+        
+
+    def validate_win(self):
+        if self.line_evaluation("row")!="":
+            winner=self.line_evaluation("row")
+        elif self.line_evaluation("column")!="":
+            winner=self.line_evaluation("column")
+        elif self.diagolal_evaluation()!="":
+            winner=self.diagolal_evaluation()
+        else: winner=""
+        if winner == "":
+            return False
+        if self.player_1==winner:
+            self.win_player_1=True
+        else: self.win_player_2=True
+        return True
+    
+    def line_evaluation(self,evaluation_type:str):
+        for filter_1 in range(1,4):
+            evaluation = ""
+            validation=True
+            for filter_2 in range(1,4):
+                row= filter_1 if evaluation_type=="row" else filter_2
+                column= filter_2 if evaluation_type=="row" else filter_1
+                if evaluation == "":
+                    evaluation = self.table[row][column]
+                elif evaluation != self.table[row][column] or evaluation==" ":
+                    validation=False
+        return evaluation if validation else ""
+
+    def diagolal_evaluation(self):
+        evaluation_left_diagonal=""
+        evaluation_right_diagonal=""
+        validation_left_diagonal=True
+        validation_right_diagonal=True
+        for row, column in itertools.product(range(1,4), range(1,4)):
+            if row==column:
+                if evaluation_left_diagonal=="":
+                    evaluation_left_diagonal=self.table[row][column]
+                elif evaluation_left_diagonal!=self.table[row][column]:
+                    validation_left_diagonal=False
+            if column-row==2 or row-column==2:
+                if evaluation_right_diagonal=="":
+                    evaluation_right_diagonal=self.table[row][column]
+                elif evaluation_right_diagonal!=self.table[row][column]:
+                    validation_right_diagonal=False
+        if validation_left_diagonal: return evaluation_left_diagonal
+        elif validation_right_diagonal: return evaluation_right_diagonal
+        else: return ""
+
+class GameFollow():
+    def __init__(self) -> None:
+        self.end=False
+    
+    @staticmethod
+    def wellcome():
+        print("Bienvenido al juego del gato")
+
+    @staticmethod
+    def start_game():
+        return Game(input("Ingresa el nombre del jugador 1: "),input("Ingresa el nombre del jugador 2: "))
+
+    def move_turn():
+        pass
+
 
 
 
 if __name__=="__main__":
-    wellcome()
-    game=Game(player_1_name="Anais",player_2_name="Ivanna")
-    game.add_move(1,2,1)
-    game.print_table()
+    manage=GameFollow()
+    game=manage.start_game()
+    game.start_turn(1)
+
+    
 
