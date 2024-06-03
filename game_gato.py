@@ -13,8 +13,8 @@ class LogicGame():
             player_2_name (str, optional): The player 2 name. Defaults to "player2".
         """
         self.table=self.init_table()
-        self.player_1=Player("X",player_1)
-        self.player_2=Player("O",player_2)
+        self.player_1=Player("X",player_1 if player_1!="" else "player1")
+        self.player_2=Player("O",player_2 if player_2!="" else "player2")
         self.end=False
 
     def add_move(self, row: int, column: int, player: int) -> bool:
@@ -75,7 +75,6 @@ class LogicGame():
             if self.add_move(self.validate_input("fila"),
                             self.validate_input("columna"),
                             player):
-                self.print_table()
                 turn_ended=True
             else: print("Esta posición ya existe, elige otra")
         self.end=self.validate_win()
@@ -86,13 +85,18 @@ class LogicGame():
         Returns:
             bool: If there is a winner
         """
-        if self.line_evaluation("row")!="":
-            winner=self.line_evaluation("row")
-        elif self.line_evaluation("column")!="":
-            winner=self.line_evaluation("column")
-        elif self.diagolal_evaluation()!="":
-            winner=self.diagolal_evaluation()
+        
+        row_evaluation=self.evaluation_win("row")
+        column_evaluation=self.evaluation_win("column")
+        left_diagonal_evaluation=self.evaluation_win("left")
+        right_diagonal_evaluation=self.evaluation_win("right")
+
+        if row_evaluation: winner = row_evaluation
+        elif column_evaluation: winner = column_evaluation
+        elif left_diagonal_evaluation: winner = left_diagonal_evaluation
+        elif right_diagonal_evaluation: winner = right_diagonal_evaluation
         else: winner=""
+
         if winner == "":
             return False
         if self.player_1.get_input()==winner:
@@ -100,51 +104,53 @@ class LogicGame():
         else: self.player_2.set_win(True)
         return True
     
-    def line_evaluation(self, evaluation_type: str) -> str:
-        """Evaluates if there are 3 equal inputs in a line (row or column)
+    def evaluation_win(self, evaluation_type: str) -> str|bool:
+        """Evaluates if there are 3 equals inputs in a diagonal,column or row
+        Args:
+        evaluation_type (str): Type of the evaluation
+
+        Returns:
+            str|bool: The input winner or false if there is not
+        """
+        evaluation_list=[]
+        if evaluation_type in {"row", "column"}:
+            for filter_1 in range(1,4):
+                for filter_2 in range(1,4):
+                    row = filter_1 if evaluation_type=="row" else filter_2
+                    column = filter_2 if evaluation_type=="row" else filter_1
+                    evaluation_list.append(self.table[row][column])
+                if validation := self.validation_list(evaluation_list):
+                    return validation
+                else:
+                    evaluation_list=[]
+            return False
+        else:
+            for row, column in itertools.product(range(1,4), range(1,4)):
+                if row==column and evaluation_type=="left":
+                    evaluation_list.append(self.table[row][column])
+                if evaluation_type=="right" and (
+                        (row == 1 and column == 3) or 
+                        (row == 2 and column == 2) or 
+                        (row == 3 and column ==1)
+                    ):
+                    evaluation_list.append(self.table[row][column])
+            return self.validation_list(evaluation_list)
+
+    def validation_list(self, evaluation_list:list) -> str|bool:
+        """Evaluates if the list provided has all the items equal
 
         Args:
-            evaluation_type (str): (Row or Column)
+            evaluation_list (list): The list to evaluate
 
         Returns:
-            str: The input winner or empry if there is not
+            str|bool: The item repeated or false if there is not repeated item
         """
-        for filter_1 in range(1,4):
-            evaluation = ""
-            validation=True
-            for filter_2 in range(1,4):
-                row= filter_1 if evaluation_type=="row" else filter_2
-                column= filter_2 if evaluation_type=="row" else filter_1
-                if evaluation == "":
-                    evaluation = self.table[row][column]
-                elif evaluation != self.table[row][column] or evaluation==" ":
-                    validation=False
-        return evaluation if validation else ""
-
-    def diagolal_evaluation(self) -> str:
-        """Evaluates if there are 3 equals inputs in a diagonal
-
-        Returns:
-            str: The input winner or empry if there is not
-        """
-        evaluation_left_diagonal=""
-        evaluation_right_diagonal=""
-        validation_left_diagonal=True
-        validation_right_diagonal=True
-        for row, column in itertools.product(range(1,4), range(1,4)):
-            if row==column:
-                if evaluation_left_diagonal=="":
-                    evaluation_left_diagonal=self.table[row][column]
-                elif evaluation_left_diagonal!=self.table[row][column]:
-                    validation_left_diagonal=False
-            if column-row==2 or row-column==2:
-                if evaluation_right_diagonal=="":
-                    evaluation_right_diagonal=self.table[row][column]
-                elif evaluation_right_diagonal!=self.table[row][column]:
-                    validation_right_diagonal=False
-        if validation_left_diagonal: return evaluation_left_diagonal
-        elif validation_right_diagonal: return evaluation_right_diagonal
-        else: return ""
+        for _ in range(3):
+            if _>0:
+                validation = (evaluation == evaluation_list[_] and evaluation!=" ")
+                if not validation: return False
+            evaluation=evaluation_list[_]
+        return evaluation
 
     @staticmethod
     def validate_input(move_input_name: str) -> int:
@@ -234,6 +240,7 @@ class StartGame():
         while not self.game.end:
             player_number=1 if player_number==2 else 2
             self.game.start_turn(player_number)
+            os.system('cls')
         return player_number
     
     def end_game(self,number_winner:int):
