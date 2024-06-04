@@ -265,10 +265,6 @@ class StartGame():
         """
         return LogicGame(input("Ingresa el nombre del jugador 1: "),input("Ingresa el nombre del jugador 2: "))
 
-
-
-
-
 if __name__=="__main__":
     StartGame()
 
